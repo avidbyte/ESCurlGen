@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ES Curl 生成器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-row {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        input:hover,
+        select:hover,
+        textarea:hover {
+            border-color: #999;
+        }
+
+        textarea {
+            resize: none;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            border-radius: 4px;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        #curl-output {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            white-space: pre-wrap;
+            border-radius: 4px;
+        }
+
+        .required {
+            color: red;
+        }
+
+        .error {
+            color: red;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>ES Curl 命令生成器</h1>
+
+    <div class="container">
+
+        <div class="input-row">
+            <div class="input-group">
+                <label for="url"><span class="required">*</span> ES 地址：</label>
+                <input type="text" id="url" placeholder="例如：http://localhost:9200">
+            </div>
+            <div class="input-group">
+                <label for="index"><span class="required">*</span> 索引名：</label>
+                <input type="text" id="index" placeholder="请输入索引名">
+            </div>
+        </div>
+
+        <div class="input-row">
+            <div class="input-group">
+                <label for="username">用户名（选填）：</label>
+                <input type="text" id="username" placeholder="如果设置了用户名请输入">
+            </div>
+            <div class="input-group">
+                <label for="password">密码（选填）：</label>
+                <input type="password" id="password" placeholder="如果设置了密码请输入">
+            </div>
+        </div>
+
+        <div class="input-row">
+            <div class="input-group">
+                <label for="operation"><span class="required">*</span> 选择操作类型：</label>
+                <select id="operation" onchange="updateForm()">
+                    <option value="search">根据条件查询</option>
+                    <option value="searchById">根据 ID 查询</option>
+                    <option value="mapping">查询 Mapping</option>
+                    <option value="create">新增数据</option>
+                    <option value="update">更新数据</option>
+                    <option value="addField">新增索引字段</option>
+                    <option value="delete">删除数据</option>
+                    <option value="deleteIndex">删除索引</option>
+                    <option value="createIndex">创建索引</option>
+                    <option value="bulk">批量操作</option>
+                    <option value="scroll">滚动查询</option>
+                    <option value="aggregation">聚合查询</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="query-section" class="input-row">
+            <div class="input-group full-width">
+                <label for="query">查询条件（JSON格式，选填）：</label>
+                <textarea id="query" rows="6" placeholder='例如：{ "from": 0, "size": 20 }'></textarea>
+            </div>
+        </div>
+
+        <div id="error-message" class="error"></div>
+
+        <div class="input-row">
+            <button onclick="generateCurl()">生成 curl 命令</button>
+            <button onclick="copyCurl()">复制 curl 命令</button>
+        </div>
+
+        <div id="curl-output"></div>
+
+    </div>
+
+    <script>
+        function updateForm() {
+            const operation = document.getElementById("operation").value;
+            const querySection = document.getElementById("query-section");
+            let queryLabel = "";
+            let queryPlaceholder = "";
+
+            switch (operation) {
+                case "search":
+                    queryLabel = "查询条件（JSON格式，选填）：";
+                    queryPlaceholder = '{ "from": 0, "size": 20 }';
+                    break;
+                case "searchById":
+                    queryLabel = "文档 ID：";
+                    queryPlaceholder = '例如：123';
+                    break;
+                case "mapping":
+                    queryLabel = "查询 Mapping 无需额外条件";
+                    queryPlaceholder = '';
+                    break;
+                case "create":
+                    queryLabel = "新增数据（JSON格式）：";
+                    queryPlaceholder = '{ "field1": "value1", "field2": 123 }';
+                    break;
+                case "update":
+                    queryLabel = "更新数据（JSON格式）：";
+                    queryPlaceholder = '{ "doc": { "field1": "new_value" } }';
+                    break;
+                case "addField":
+                    queryLabel = "新增索引字段（JSON格式）：";
+                    queryPlaceholder = '{ "properties": { "new_field": { "type": "text" } } }';
+                    break;
+                case "delete":
+                    queryLabel = "删除文档 ID：";
+                    queryPlaceholder = '例如：123';
+                    break;
+                case "deleteIndex":
+                    queryLabel = "删除索引，无需额外条件";
+                    queryPlaceholder = '';
+                    break;
+                case "createIndex":
+                    queryLabel = "创建索引（JSON格式）：";
+                    queryPlaceholder = '{ "mappings": { "properties": { "field1": { "type": "text" } } } }';
+                    break;
+                case "bulk":
+                    queryLabel = "批量操作（JSON格式）：";
+                    queryPlaceholder = '{ "index": { "_id": "1" } }\n{ "field1": "value1" }';
+                    break;
+                case "scroll":
+                    queryLabel = "滚动查询条件（JSON格式）：";
+                    queryPlaceholder = '{ "size": 100, "query": { "match_all": {} } }';
+                    break;
+                case "aggregation":
+                    queryLabel = "聚合查询条件（JSON格式）：";
+                    queryPlaceholder = '{ "size": 0, "aggs": { "avg_price": { "avg": { "field": "price" } } } }';
+                    break;
+            }
+
+            querySection.querySelector("label").textContent = queryLabel;
+            document.getElementById("query").placeholder = queryPlaceholder;
+        }
+
+        function generateCurl() {
+            const operation = document.getElementById("operation").value;
+            const username = document.getElementById("username").value.trim();
+            const password = document.getElementById("password").value.trim();
+            const url = document.getElementById("url").value.trim();
+            const index = document.getElementById("index").value.trim();
+            const query = document.getElementById("query").value.trim();
+            const errorMessage = document.getElementById("error-message");
+
+            errorMessage.textContent = '';
+            if (!url || !index) {
+                errorMessage.textContent = '请填写 ES 地址和索引名！';
+                return;
+            }
+
+            let authPart = '';
+            if (username) {
+                if (!password) {
+                    errorMessage.textContent = '请输入密码或留空用户名！';
+                    return;
+                }
+                authPart = `--user ${username}:${password} `;
+            }
+            if (!username && password) {
+                errorMessage.textContent = '请输入用户名或留空密码！';
+                return;
+            }
+
+            let curlCommand = '';
+            switch (operation) {
+                case "search":
+                    curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_search?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                    break;
+                case "searchById":
+                    curlCommand = `curl ${authPart}-XGET "${url}/${index}/_doc/${query}?pretty"`;
+                    break;
+                case "mapping":
+                    curlCommand = `curl ${authPart}-XGET "${url}/${index}/_mapping?pretty"`;
+                    break;
+                case "create":
+                    curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_doc?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                    break;
+                case "update":
+                    curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_update/ID?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                    break;
+                case "addField":
+                    curlCommand = `curl ${authPart}-XPUT "${url}/${index}/_mapping?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                    break;
+                case "delete":
+                    curlCommand = `curl ${authPart}-XDELETE "${url}/${index}/_doc/${query}?pretty"`;
+                    break;
+                case "deleteIndex":
+                    curlCommand = `curl ${authPart}-XDELETE "${url}/${index}?pretty"`;
+                    break;
+                case "createIndex":
+                    curlCommand = `curl ${authPart}-XPUT "${url}/${index}?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                    break;
+                case "bulk":
+                    curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_bulk?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                    break;
+                case "scroll":
+                    curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_search?scroll=1m&pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                    break;
+                case "aggregation":
+                    curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_search?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                    break;
+                default:
+                    errorMessage.textContent = '请选择有效的操作类型！';
+                    return;
+            }
+
+            document.getElementById("curl-output").textContent = curlCommand;
+        }
+
+        function copyCurl() {
+            const curlCommand = document.getElementById("curl-output").textContent;
+            if (curlCommand) {
+                navigator.clipboard.writeText(curlCommand).then(() => {
+                    alert('curl 命令已复制到剪贴板');
+                });
+            } else {
+                alert('没有生成 curl 命令');
+            }
+        }
+    </script>
+
+</body>
+
+</html>
