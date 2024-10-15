@@ -279,7 +279,7 @@
                 curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_doc/_search" -H 'Content-Type: application/json' -d'\n${query}'`;
                 break;
             case "searchById":
-                curlCommand = `curl ${authPart}-XGET "${url}/${index}/_doc/${query}?pretty"`;
+                curlCommand = `curl ${authPart}-XGET "${url}/${index}/_doc/${query}"`;
                 break;
             case "mapping":
                 curlCommand = `curl ${authPart}-XGET "${url}/${index}/_mapping"`;
