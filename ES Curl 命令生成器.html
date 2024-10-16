@@ -161,6 +161,7 @@
                 <option value="bulk">批量操作</option>
                 <option value="scroll">滚动查询</option>
                 <option value="aggregation">聚合查询</option>
+                <option value="setting">settings查询</option>
             </select>
         </div>
     </div>
@@ -239,6 +240,10 @@
                 queryLabel = "聚合查询条件（JSON格式）：";
                 queryPlaceholder = '{ "size": 0, "aggs": { "avg_price": { "avg": { "field": "price" } } } }';
                 break;
+            case "setting":
+                queryLabel = "查询 settings 无需额外条件";
+                queryPlaceholder = '';
+                break;
         }
 
         querySection.querySelector("label").textContent = queryLabel;
@@ -310,6 +315,9 @@
                 break;
             case "aggregation":
                 curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_search?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                break;
+            case "setting":
+                curlCommand = `curl ${authPart}-XGET "${url}/${index}/_settings?pretty"`;
                 break;
             default:
                 errorMessage.textContent = '请选择有效的操作类型！';
