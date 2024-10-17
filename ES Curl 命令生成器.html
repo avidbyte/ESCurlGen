@@ -94,6 +94,7 @@
             border: 1px solid #ddd;
             white-space: pre-wrap;
             border-radius: 4px;
+            overflow-x: auto; /* 添加此行 */
         }
 
         .required {
@@ -103,16 +104,6 @@
         .error {
             color: red;
             margin-bottom: 20px;
-        }
-
-        #curl-output {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #fff;
-            border: 1px solid #ddd;
-            white-space: pre-wrap;
-            border-radius: 4px;
-            overflow-x: auto; /* 添加此行 */
         }
     </style>
 </head>
@@ -175,6 +166,13 @@
         </div>
     </div>
 
+    <div id="id-section" class="input-row" style="display:none;">
+        <div class="input-group full-width">
+            <label for="id">文档 ID：</label>
+            <input type="text" id="id" placeholder="请输入文档 ID">
+        </div>
+    </div>
+
     <div id="error-message" class="error"></div>
 
     <div class="button-row">
@@ -190,6 +188,7 @@
     function updateForm() {
         const operation = document.getElementById("operation").value;
         const querySection = document.getElementById("query-section");
+        const idSection = document.getElementById("id-section");
         let queryLabel = "";
         let queryPlaceholder = "";
 
@@ -197,80 +196,97 @@
             case "search":
                 queryLabel = "查询条件（JSON格式，选填）：";
                 queryPlaceholder = '{ "from": 0, "size": 20 }';
+                idSection.style.display = "none";
                 break;
             case "searchById":
                 queryLabel = "文档 ID：";
                 queryPlaceholder = '例如：123';
+                idSection.style.display = "block";
                 break;
             case "create":
                 queryLabel = "新增数据（JSON格式）：";
                 queryPlaceholder = '{ "field1": "value1", "field2": 123 }';
+                idSection.style.display = "block";
                 break;
             case "updateById":
                 queryLabel = "根据 ID 更新数据（JSON格式）：";
                 queryPlaceholder = '{ "doc": { "field1": "new_value" } }';
+                idSection.style.display = "block";
                 break;
             case "update":
                 queryLabel = "根据自定义条件更新数据（JSON格式）：";
                 queryPlaceholder = '{ "doc": { "field1": "new_value" } }';
+                idSection.style.display = "none";
                 break;
             case "deleteById":
                 queryLabel = "删除文档 ID：";
                 queryPlaceholder = '例如：123';
+                idSection.style.display = "block";
                 break;
             case "delete":
                 queryLabel = "删除文档 ID：";
                 queryPlaceholder = '例如：123';
+                idSection.style.display = "block";
                 break;
             case "count":
                 queryLabel = "查询索引数据条数 无需额外条件";
                 queryPlaceholder = '';
+                idSection.style.display = "none";
                 break;
             case "mapping":
                 queryLabel = "查询 Mapping 无需额外条件";
                 queryPlaceholder = '';
+                idSection.style.display = "none";
                 break;
             case "addField":
                 queryLabel = "新增索引字段（JSON格式）：";
                 queryPlaceholder = '{ "properties": { "new_field": { "type": "text" } } }';
+                idSection.style.display = "none";
                 break;
             case "setting":
                 queryLabel = "查询 settings 无需额外条件";
                 queryPlaceholder = '';
+                idSection.style.display = "none";
                 break;
             case "createIndex":
                 queryLabel = "创建索引（JSON格式）：";
                 queryPlaceholder = '{ "mappings": { "properties": { "field1": { "type": "text" } } } }';
+                idSection.style.display = "none";
                 break;
             case "deleteIndex":
                 queryLabel = "删除索引，无需额外条件";
                 queryPlaceholder = '';
+                idSection.style.display = "none";
                 break;
             case "bulk":
                 queryLabel = "批量操作（JSON格式）：";
                 queryPlaceholder = '{ "index": { "_id": "1" } }\n{ "field1": "value1" }';
+                idSection.style.display = "none";
                 break;
             case "scroll":
                 queryLabel = "滚动查询条件（JSON格式）：";
-                queryPlaceholder = '{ "size": 100, "query": { "match_all": {} } }';
+                queryPlaceholder = '{ "scroll": "1m", "size": 20, "query": { "match_all": {} } }';
+                idSection.style.display = "none";
                 break;
-
+            default:
+                break;
         }
 
-        querySection.querySelector("label").textContent = queryLabel;
         document.getElementById("query").placeholder = queryPlaceholder;
+        document.getElementById("query").value = "";
+        document.getElementById("query").innerText = queryLabel;
     }
 
     function generateCurl() {
-        const operation = document.getElementById("operation").value;
-        const username = document.getElementById("username").value.trim();
-        const password = document.getElementById("password").value.trim();
         const url = document.getElementById("url").value.trim();
         const index = document.getElementById("index").value.trim();
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value.trim();
+        const operation = document.getElementById("operation").value;
         const query = document.getElementById("query").value.trim();
+        const id = document.getElementById("id").value.trim();
         const errorMessage = document.getElementById("error-message");
 
-        errorMessage.textContent = '';
         if (!url || !index) {
             errorMessage.textContent = '请填写 ES 地址和索引名！';
             return;
@@ -284,33 +300,48 @@
             }
             authPart = `--user ${username}:${password} `;
         }
+
         if (!username && password) {
             errorMessage.textContent = '请输入用户名或留空密码！';
             return;
         }
 
-        let curlCommand = '';
+        let curlCommand = "";
+
+
         switch (operation) {
             case "search":
-                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_search?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X GET "${url}/${index}/_search?pretty" -H 'Content-Type: application/json' -d '${query}'`;
                 break;
             case "searchById":
-                curlCommand = `curl ${authPart}-X GET "${url}/${index}/_doc/${query}?pretty"`;
+                if (!id) {
+                    errorMessage.textContent = "文档 ID 是必填项。";
+                } else {
+                    curlCommand = `curl ${authPart}-X GET "${url}/${index}/_doc/${id}?pretty"`;
+                }
                 break;
             case "create":
-                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_doc?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_doc/${id}?pretty" -H 'Content-Type: application/json' -d '${query}'`;
                 break;
             case "updateById":
-                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_update/${query}?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                if (!id) {
+                    errorMessage.textContent = "文档 ID 是必填项。";
+                } else {
+                    curlCommand = `curl ${authPart}-X POST "${url}/${index}/_update/${id}?pretty" -H 'Content-Type: application/json' -d '${query}'`;
+                }
                 break;
             case "update":
-                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_update_by_query?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_update_by_query?pretty" -H 'Content-Type: application/json' -d '${query}'`;
                 break;
             case "deleteById":
-                curlCommand = `curl ${authPart}-X DELETE "${url}/${index}/_doc/${query}?pretty"`;
+                if (!id) {
+                    errorMessage.textContent = "文档 ID 是必填项。";
+                } else {
+                    curlCommand = `curl ${authPart}-X DELETE "${url}/${index}/_doc/${id}?pretty"`;
+                }
                 break;
             case "delete":
-                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_delete_by_query?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_delete_by_query?pretty" -H 'Content-Type: application/json' -d '${query}'`;
                 break;
             case "count":
                 curlCommand = `curl ${authPart}-X GET "${url}/${index}/_count?pretty"`;
@@ -319,35 +350,36 @@
                 curlCommand = `curl ${authPart}-X GET "${url}/${index}/_mapping?pretty"`;
                 break;
             case "addField":
-                curlCommand = `curl ${authPart}-X PUT "${url}/${index}/_mapping?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X PUT "${url}/${index}/_mapping?pretty" -H 'Content-Type: application/json' -d '${query}'`;
                 break;
             case "setting":
                 curlCommand = `curl ${authPart}-X GET "${url}/${index}/_settings?pretty"`;
                 break;
             case "createIndex":
-                curlCommand = `curl ${authPart}-X PUT "${url}/${index}?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X PUT "${url}/${index}?pretty" -H 'Content-Type: application/json' -d '${query}'`;
                 break;
             case "deleteIndex":
                 curlCommand = `curl ${authPart}-X DELETE "${url}/${index}?pretty"`;
                 break;
             case "bulk":
-                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_bulk?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                // 确保 query 以换行符结束，或在生成 query 时每个操作块的末尾添加 \n
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_bulk?pretty" -H 'Content-Type: application/x-ndjson' --data-binary '\n${query}\n'`;
                 break;
             case "scroll":
-                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_search?scroll=1m&pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_search?scroll=1m&pretty" -H 'Content-Type: application/json' -d '${query}'`;
                 break;
             default:
-                errorMessage.textContent = '请选择有效的操作类型！';
-                return;
+                break;
         }
 
-        document.getElementById("curl-output").textContent = curlCommand;
+        
+        document.getElementById("curl-output").innerText = curlCommand;
     }
 
     function copyCurl() {
-        const curlCommand = document.getElementById("curl-output").textContent;
-        if (curlCommand) {
-            navigator.clipboard.writeText(curlCommand).then(() => {
+        const curlOutput = document.getElementById("curl-output");
+        if (curlOutput.innerText) {
+            navigator.clipboard.writeText(curlOutput.innerText).then(() => {
                 // 创建一个临时的 div 元素用于显示提示信息
                 const toast = document.createElement("div");
                 toast.innerText = "复制成功";
@@ -370,16 +402,14 @@
                 setTimeout(() => {
                     document.body.removeChild(toast);
                 }, 1000);
-            }).catch(err => {
-                console.error('复制失败', err);
-                alert('复制失败，请尝试手动复制。');
+            }, (err) => {
+                console.error("复制失败: ", err);
             });
         } else {
-            alert('没有生成 curl 命令');
+            alert("请先生成 Curl 命令。");
         }
     }
 </script>
 
 </body>
-
 </html>
