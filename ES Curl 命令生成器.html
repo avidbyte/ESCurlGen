@@ -292,40 +292,49 @@
         let curlCommand = '';
         switch (operation) {
             case "search":
-                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_doc/_search" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_search?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
                 break;
             case "searchById":
-                curlCommand = `curl ${authPart}-X GET "${url}/${index}/_doc/${query}"`;
+                curlCommand = `curl ${authPart}-X GET "${url}/${index}/_doc/${query}?pretty"`;
                 break;
             case "create":
                 curlCommand = `curl ${authPart}-X POST "${url}/${index}/_doc?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
                 break;
-            case "mapping":
-                curlCommand = `curl ${authPart}-X GET "${url}/${index}/_mapping"`;
+            case "updateById":
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_update/${query}?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
                 break;
             case "update":
-                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_update/ID?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_update_by_query?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                break;
+            case "deleteById":
+                curlCommand = `curl ${authPart}-X DELETE "${url}/${index}/_doc/${query}?pretty"`;
+                break;
+            case "delete":
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_delete_by_query?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                break;
+            case "count":
+                curlCommand = `curl ${authPart}-X GET "${url}/${index}/_count?pretty"`;
+                break;
+            case "mapping":
+                curlCommand = `curl ${authPart}-X GET "${url}/${index}/_mapping?pretty"`;
                 break;
             case "addField":
                 curlCommand = `curl ${authPart}-X PUT "${url}/${index}/_mapping?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
                 break;
-            case "delete":
-                curlCommand = `curl ${authPart}-X DELETE "${url}/${index}/_doc/${query}?pretty"`;
-                break;
-            case "deleteIndex":
-                curlCommand = `curl ${authPart}-X DELETE "${url}/${index}?pretty"`;
+            case "setting":
+                curlCommand = `curl ${authPart}-X GET "${url}/${index}/_settings?pretty"`;
                 break;
             case "createIndex":
                 curlCommand = `curl ${authPart}-X PUT "${url}/${index}?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                break;
+            case "deleteIndex":
+                curlCommand = `curl ${authPart}-X DELETE "${url}/${index}?pretty"`;
                 break;
             case "bulk":
                 curlCommand = `curl ${authPart}-X POST "${url}/${index}/_bulk?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
                 break;
             case "scroll":
                 curlCommand = `curl ${authPart}-X POST "${url}/${index}/_search?scroll=1m&pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
-                break;
-            case "setting":
-                curlCommand = `curl ${authPart}-X GET "${url}/${index}/_settings?pretty"`;
                 break;
             default:
                 errorMessage.textContent = '请选择有效的操作类型！';
