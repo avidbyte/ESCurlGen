@@ -151,17 +151,19 @@
             <select id="operation" onchange="updateForm()">
                 <option value="search">根据条件查询</option>
                 <option value="searchById">根据 ID 查询</option>
-                <option value="mapping">查询 Mapping</option>
                 <option value="create">新增数据</option>
-                <option value="update">更新数据</option>
+                <option value="updateById">根据 ID 更新数据</option>
+                <option value="update">根据自定义条件更新数据</option>
+                <option value="deleteById">根据 ID 删除数据</option>
+                <option value="delete">根据自定义条件删除数据</option>
+                <option value="count">查询索引数据条数</option>
+                <option value="mapping">查询 Mapping</option>
                 <option value="addField">新增索引字段</option>
-                <option value="delete">删除数据</option>
-                <option value="deleteIndex">删除索引</option>
+                <option value="setting">settings查询</option>
                 <option value="createIndex">创建索引</option>
+                <option value="deleteIndex">删除索引</option>
                 <option value="bulk">批量操作</option>
                 <option value="scroll">滚动查询</option>
-                <option value="aggregation">聚合查询</option>
-                <option value="setting">settings查询</option>
             </select>
         </div>
     </div>
@@ -200,33 +202,49 @@
                 queryLabel = "文档 ID：";
                 queryPlaceholder = '例如：123';
                 break;
-            case "mapping":
-                queryLabel = "查询 Mapping 无需额外条件";
-                queryPlaceholder = '';
-                break;
             case "create":
                 queryLabel = "新增数据（JSON格式）：";
                 queryPlaceholder = '{ "field1": "value1", "field2": 123 }';
                 break;
-            case "update":
-                queryLabel = "更新数据（JSON格式）：";
+            case "updateById":
+                queryLabel = "根据 ID 更新数据（JSON格式）：";
                 queryPlaceholder = '{ "doc": { "field1": "new_value" } }';
                 break;
-            case "addField":
-                queryLabel = "新增索引字段（JSON格式）：";
-                queryPlaceholder = '{ "properties": { "new_field": { "type": "text" } } }';
+            case "update":
+                queryLabel = "根据自定义条件更新数据（JSON格式）：";
+                queryPlaceholder = '{ "doc": { "field1": "new_value" } }';
+                break;
+            case "deleteById":
+                queryLabel = "删除文档 ID：";
+                queryPlaceholder = '例如：123';
                 break;
             case "delete":
                 queryLabel = "删除文档 ID：";
                 queryPlaceholder = '例如：123';
                 break;
-            case "deleteIndex":
-                queryLabel = "删除索引，无需额外条件";
+            case "count":
+                queryLabel = "查询索引数据条数 无需额外条件";
+                queryPlaceholder = '';
+                break;
+            case "mapping":
+                queryLabel = "查询 Mapping 无需额外条件";
+                queryPlaceholder = '';
+                break;
+            case "addField":
+                queryLabel = "新增索引字段（JSON格式）：";
+                queryPlaceholder = '{ "properties": { "new_field": { "type": "text" } } }';
+                break;
+            case "setting":
+                queryLabel = "查询 settings 无需额外条件";
                 queryPlaceholder = '';
                 break;
             case "createIndex":
                 queryLabel = "创建索引（JSON格式）：";
                 queryPlaceholder = '{ "mappings": { "properties": { "field1": { "type": "text" } } } }';
+                break;
+            case "deleteIndex":
+                queryLabel = "删除索引，无需额外条件";
+                queryPlaceholder = '';
                 break;
             case "bulk":
                 queryLabel = "批量操作（JSON格式）：";
@@ -236,14 +254,7 @@
                 queryLabel = "滚动查询条件（JSON格式）：";
                 queryPlaceholder = '{ "size": 100, "query": { "match_all": {} } }';
                 break;
-            case "aggregation":
-                queryLabel = "聚合查询条件（JSON格式）：";
-                queryPlaceholder = '{ "size": 0, "aggs": { "avg_price": { "avg": { "field": "price" } } } }';
-                break;
-            case "setting":
-                queryLabel = "查询 settings 无需额外条件";
-                queryPlaceholder = '';
-                break;
+
         }
 
         querySection.querySelector("label").textContent = queryLabel;
@@ -281,43 +292,40 @@
         let curlCommand = '';
         switch (operation) {
             case "search":
-                curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_doc/_search" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_doc/_search" -H 'Content-Type: application/json' -d'\n${query}'`;
                 break;
             case "searchById":
-                curlCommand = `curl ${authPart}-XGET "${url}/${index}/_doc/${query}"`;
-                break;
-            case "mapping":
-                curlCommand = `curl ${authPart}-XGET "${url}/${index}/_mapping"`;
+                curlCommand = `curl ${authPart}-X GET "${url}/${index}/_doc/${query}"`;
                 break;
             case "create":
-                curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_doc?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_doc?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                break;
+            case "mapping":
+                curlCommand = `curl ${authPart}-X GET "${url}/${index}/_mapping"`;
                 break;
             case "update":
-                curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_update/ID?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_update/ID?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
                 break;
             case "addField":
-                curlCommand = `curl ${authPart}-XPUT "${url}/${index}/_mapping?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X PUT "${url}/${index}/_mapping?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
                 break;
             case "delete":
-                curlCommand = `curl ${authPart}-XDELETE "${url}/${index}/_doc/${query}?pretty"`;
+                curlCommand = `curl ${authPart}-X DELETE "${url}/${index}/_doc/${query}?pretty"`;
                 break;
             case "deleteIndex":
-                curlCommand = `curl ${authPart}-XDELETE "${url}/${index}?pretty"`;
+                curlCommand = `curl ${authPart}-X DELETE "${url}/${index}?pretty"`;
                 break;
             case "createIndex":
-                curlCommand = `curl ${authPart}-XPUT "${url}/${index}?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X PUT "${url}/${index}?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
                 break;
             case "bulk":
-                curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_bulk?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_bulk?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
                 break;
             case "scroll":
-                curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_search?scroll=1m&pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
-                break;
-            case "aggregation":
-                curlCommand = `curl ${authPart}-XPOST "${url}/${index}/_search?pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_search?scroll=1m&pretty" -H 'Content-Type: application/json' -d'\n${query}'`;
                 break;
             case "setting":
-                curlCommand = `curl ${authPart}-XGET "${url}/${index}/_settings?pretty"`;
+                curlCommand = `curl ${authPart}-X GET "${url}/${index}/_settings?pretty"`;
                 break;
             default:
                 errorMessage.textContent = '请选择有效的操作类型！';
