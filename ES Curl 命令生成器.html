@@ -366,7 +366,8 @@
                 curlCommand = `curl ${authPart}-X POST "${url}/${index}/_bulk?pretty" -H 'Content-Type: application/x-ndjson' --data-binary '\n${query}\n'`;
                 break;
             case "scroll":
-                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_search?scroll=1m&pretty" -H 'Content-Type: application/json' -d '${query}'`;
+                curlCommand = `curl ${authPart}-X POST "${url}/${index}/_search?scroll=1m&pretty" -H 'Content-Type: application/json' -d '${query}'\n`;
+                curlCommand += `curl ${authPart}-X GET "${url}/_search/scroll?pretty" -H 'Content-Type: application/json' -d '{ "scroll": "1m", "scroll_id": "DXF1ZXJ5QW5kRmV0Y2gBAAAAAA..." }'`;
                 break;
             default:
                 break;

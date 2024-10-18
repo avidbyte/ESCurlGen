@@ -82,7 +82,7 @@
 ## 10.滚动查询
 ```json
 {
-  "size": 100,
+  "size": 2,
   "query": {
     "match_all": {
     }
@@ -109,19 +109,23 @@
 
 
 ## 12.根据自定义条件更新数据
+
 ```json
 {
   "query": {
     "match": {
-      "name": "John Doe"
+      "name": "Jane Doe"
     }
   },
   "script": {
-    "source": "ctx._source.phone = '111-111-1111'",
+    "source": "ctx._source.phone = params.phone; ctx._source.address = params.address",
+    "params": {
+      "phone": "5555555555",
+      "address": "222 Elm St"
+    },
     "lang": "painless"
   }
 }
-
 ```
 
 ## 13.根据 ID 删除数据
@@ -131,7 +135,7 @@
 {
   "query": {
     "match": {
-      "name": "Alice Johnson"
+      "name": "Jane Doe"
     }
   }
 }
