@@ -2,6 +2,7 @@
 由于经常编写复杂的 Elasticsearch 查询，并通过代码生成查询条件，我发现每次使用 curl 请求 Elasticsearch 时，手动复制配置信息并构建 curl 命令的过程非常繁琐，尤其是在管理多个环境的情况下更为不便。因此，我利用 AI 技术开发了一款 Web 工具，经过一系列优化和改进，该工具能够智能拼接配置信息，自动生成完整的 Elasticsearch curl 命令，极大提升了工作效率。
 ![工具截图](https://github.com/avidbyte/ESCurlGen/blob/main/Snipaste_2024-10-15_17-44-58.png "可选标题")
 
+访问地址可直接使用（需科学上网） https://avidbyte.github.io/ESCurlGen/
 
 # 功能介绍 测试示例 my_user_index 索引
 
@@ -142,3 +143,8 @@
 ```
 
 ## 15.删除索引
+
+
+
+## 16.批量更新文档 (2024-12-14新增)
+
